@@ -200,6 +200,8 @@ def write_csv(data, filename):
 
     This function should not return anything.
     """
+    data.sort(key = lambda x: x[1], reverse = False)
+
 
     with open(filename, 'w') as file:
         
@@ -212,6 +214,7 @@ def write_csv(data, filename):
 
         for listing in data:
             writer.writerow(listing)
+        
 
 
 
@@ -242,6 +245,7 @@ def check_policy_numbers(data):
     for listing in data:
         
         policy = listing[3]
+      
         
 
         if policy != "Pending" and policy != "Exempt":
@@ -253,9 +257,8 @@ def check_policy_numbers(data):
                 continue
             else:
 
-                final_list.append(policy)
-    
-    print(final_list)
+                final_list.append(listing[2])
+
     return final_list
     pass
 
@@ -293,11 +296,11 @@ def extra_credit(listing_id):
             else:
                 year_dict[year] = year_dict[year] + 1
 
-        print(year_dict)
+
 
         for key,value in year_dict.items():
             if value > 90:
-                print("False")
+           
                 return False
         return True
         
@@ -403,11 +406,11 @@ class TestCases(unittest.TestCase):
 
 
         # check that the next row is Private room in Mission District,82,51027324,Pending,Private Room,1
-        #self.assertEqual(csv_lines[2], ["Private room in Mission District","82","51027324","Pending","Private Room","1"])
+        self.assertEqual(csv_lines[1], ["Private room in Mission District","82","51027324","Pending","Private Room","1"])
 
         # check that the last row is Apartment in Mission District,399,28668414,Pending,Entire Room,2
 
-        self.assertEqual(csv_lines[-1], ["Apartment in Mission District","399","28668414","Pending","Entire Room,2"])
+        self.assertEqual(csv_lines[-1], ["Apartment in Mission District","399","28668414","Pending","Entire Room","2"])
 
         pass
 
@@ -420,15 +423,22 @@ class TestCases(unittest.TestCase):
         # check that the return value is a list
         self.assertEqual(type(invalid_listings), list)
         # check that there is exactly one element in the string
+        self.assertEqual(len(invalid_listings),1)
 
         # check that the element in the list is a string
+        self.assertEqual(type(invalid_listings[0]),str)
+
 
         # check that the first element in the list is '16204265'
+        self.assertEqual(invalid_listings[0],'16204265')
+
         pass
 
     def test_extra_credit(self):
-        extra_credit('1944564')
-        extra_credit('16204265')
+        self.assertEqual(extra_credit('1944564'),True)
+        self.assertEqual(extra_credit('16204265'),False)
+        
+      
 
 
 if __name__ == '__main__':
