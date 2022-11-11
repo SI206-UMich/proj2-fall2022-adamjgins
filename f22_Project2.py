@@ -25,6 +25,53 @@ def get_listings_from_search_results(html_file):
         ('Loft in Mission District', 210, '1944564'),  # example
     ]
     """
+
+
+
+    with open(html_file,"r") as file:
+        soup = BeautifulSoup(file,'html.parser')
+
+        names = soup.find_all('div',class_="t1jojoys dir dir-ltr")
+        prices = soup.find_all('span',class_ = "_tyxjp1")
+
+
+        hrefs=  soup.find_all("a", class_ = "ln2bl2p dir dir-ltr")
+        rx = "\/(\d+)\?"
+
+        final_list = []
+        for item in range(len(hrefs)):
+
+            
+
+
+
+            href = hrefs[item].get('href',None)
+            id = re.findall(rx,href)
+            
+            
+            
+            tuple = (names[item].get_text(),int(prices[item].get_text().strip("$")),id[0])
+           
+            final_list.append(tuple)
+            
+
+        return(final_list)
+
+           
+        
+        
+
+
+
+
+
+         
+
+
+        
+
+
+
     pass
 
 
@@ -52,6 +99,51 @@ def get_listing_information(listing_id):
         number of bedrooms
     )
     """
+
+    with open("html_files/listing_"+ listing_id + ".html","r") as file:
+        soup = BeautifulSoup(file,'html.parser')
+
+        policy = soup.find("li",class_="f19phm7j dir dir-ltr").get_text()
+        policy = policy[15:]
+
+
+        if "pending" in policy.lower():
+            policy = "Pending"
+        if "not" in policy.lower():
+            policy = "Exempt"
+
+
+
+
+        name = soup.find('h2',class_ = "_14i3z6h").get_text()
+        
+        
+        if re.match("private",name.lower()):
+          name = ("Private Room")
+        elif re.match("Shared",name.lower()):
+           name = ("Shared Room")
+        else:
+            name = ("Entire Room")
+
+
+        bedrooms = soup.find_all("li", class_="l7n4lsf dir dir-ltr")
+        bedrooms = bedrooms[1].find_all("span")
+        bedrooms = (bedrooms[2].get_text()[0:1])
+
+
+        if bedrooms.lower() == "s":
+            bedrooms = 1
+        else:
+            bedrooms = int(bedrooms)
+        
+
+        output = (policy,name,bedrooms)
+       
+        return output
+
+
+
+
     pass
 
 
@@ -69,6 +161,20 @@ def get_detailed_listing_database(html_file):
         ...
     ]
     """
+
+    search = get_listings_from_search_results(html_file)
+    final_list = []
+    
+
+    for item in search:
+        details = get_listing_information(item[2])
+        final_list.append(item+details)
+    
+    return(final_list)
+
+
+
+
     pass
 
 
@@ -94,6 +200,21 @@ def write_csv(data, filename):
 
     This function should not return anything.
     """
+
+    with open(filename, 'w') as file:
+        
+
+        writer = csv.writer(file)
+    
+        header = ["Listing Title","Cost","Listing ID","Policy Number","Place Type","Number of Bedrooms"]
+
+        writer.writerow(header)
+
+        for listing in data:
+            writer.writerow(listing)
+
+
+
     pass
 
 
@@ -116,6 +237,26 @@ def check_policy_numbers(data):
     ]
 
     """
+    final_list = []
+
+    for listing in data:
+        
+        policy = listing[3]
+        
+
+        if policy != "Pending" and policy != "Exempt":
+
+            rx1= "20\d{2}-00\d{4}STR"
+            rx2 = "STR-000\d{4}"
+
+            if re.match(rx1, policy) or re.match(rx2,policy):
+                continue
+            else:
+
+                final_list.append(policy)
+    
+    print(final_list)
+    return final_list
     pass
 
 
@@ -133,6 +274,39 @@ def extra_credit(listing_id):
     gone over their 90 day limit, else return True, indicating the lister has
     never gone over their limit.
     """
+    with open("html_files/listing_"+ listing_id + "_reviews.html","r") as file:
+
+       
+        soup = BeautifulSoup(file,'html.parser')
+        dates = soup.find_all("li",class_="_1f1oir5")
+
+        rx = "[A-za-z]+\s(\d{4})"
+        year_dict = {}
+
+        for date in dates:
+
+            year = re.findall(rx,date.get_text() )
+            year = year[0]
+
+            if year not in year_dict:
+                year_dict[year] = 1
+            else:
+                year_dict[year] = year_dict[year] + 1
+
+        print(year_dict)
+
+        for key,value in year_dict.items():
+            if value > 90:
+                print("False")
+                return False
+        return True
+        
+
+
+
+
+
+
     pass
 
 
@@ -147,10 +321,14 @@ class TestCases(unittest.TestCase):
         # check that the variable you saved after calling the function is a list
         self.assertEqual(type(listings), list)
         # check that each item in the list is a tuple
+        for item in listings:
+            self.assertEqual(type(item),tuple)
 
         # check that the first title, cost, and listing id tuple is correct (open the search results html and find it)
+        self.assertEqual(listings[0],('Loft in Mission District',210,"1944564"))
 
         # check that the last title is correct (open the search results html and find it)
+        self.assertEqual(listings[-1][0],"Guest suite in Mission District")
         pass
 
     def test_get_listing_information(self):
@@ -174,10 +352,12 @@ class TestCases(unittest.TestCase):
             # check that the third element in the tuple is an int
             self.assertEqual(type(listing_information[2]), int)
         # check that the first listing in the html_list has policy number 'STR-0001541'
-
+        self.assertEqual(listing_informations[0][0],'STR-0001541')
         # check that the last listing in the html_list is a "Private Room"
+        self.assertEqual(listing_informations[-1][1],'Private Room')
 
         # check that the third listing has one bedroom
+        self.assertEqual(listing_informations[3][2],1)
 
         pass
 
@@ -194,9 +374,12 @@ class TestCases(unittest.TestCase):
 
         # check that the first tuple is made up of the following:
         # 'Loft in Mission District', 210, '1944564', '2022-004088STR', 'Entire Room', 1
+        self.assertEqual(detailed_database[0],('Loft in Mission District', 210, '1944564', '2022-004088STR', 'Entire Room', 1))
 
         # check that the last tuple is made up of the following:
         # 'Guest suite in Mission District', 238, '32871760', 'STR-0004707', 'Entire Room', 1
+        self.assertEqual(detailed_database[-1],('Guest suite in Mission District', 238, '32871760', 'STR-0004707', 'Entire Room', 1))
+
 
         pass
 
@@ -215,10 +398,16 @@ class TestCases(unittest.TestCase):
         # check that there are 21 lines in the csv
         self.assertEqual(len(csv_lines), 21)
         # check that the header row is correct
+        self.assertEqual(csv_lines[0], ["Listing Title","Cost","Listing ID","Policy Number","Place Type","Number of Bedrooms" ])
+
+
 
         # check that the next row is Private room in Mission District,82,51027324,Pending,Private Room,1
+        #self.assertEqual(csv_lines[2], ["Private room in Mission District","82","51027324","Pending","Private Room","1"])
 
         # check that the last row is Apartment in Mission District,399,28668414,Pending,Entire Room,2
+
+        self.assertEqual(csv_lines[-1], ["Apartment in Mission District","399","28668414","Pending","Entire Room,2"])
 
         pass
 
@@ -236,6 +425,10 @@ class TestCases(unittest.TestCase):
 
         # check that the first element in the list is '16204265'
         pass
+
+    def test_extra_credit(self):
+        extra_credit('1944564')
+        extra_credit('16204265')
 
 
 if __name__ == '__main__':
