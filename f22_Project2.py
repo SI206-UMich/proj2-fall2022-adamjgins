@@ -1,9 +1,16 @@
+#Name: Adam Ginsberg
+#M-Card: 0761-0025
+#Date: 11/11/2022
+#Partner: Jai Advani 
+
+
 from xml.sax import parseString
 from bs4 import BeautifulSoup
 import re
 import os
 import csv
 import unittest
+
 
 
 def get_listings_from_search_results(html_file):
